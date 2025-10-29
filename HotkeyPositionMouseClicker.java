@@ -30,6 +30,7 @@ public class HotkeyPositionMouseClicker {
     private boolean randomInterval = false;
     private int minInterval = 50;
     private int maxInterval = 200;
+    private boolean fastMode = false;  // 极速模式：最小化点击延迟
 
     // 点击位置参数
     private int clickX = -1;  // -1 表示当前位置
@@ -41,6 +42,7 @@ public class HotkeyPositionMouseClicker {
     private JTextField yField;
     private JRadioButton customPosRadio;
     private JTextArea logArea;
+    private JCheckBox fastModeCheck;
 
     public HotkeyPositionMouseClicker() {
         // 检测操作系统
@@ -54,7 +56,7 @@ public class HotkeyPositionMouseClicker {
 
         try {
             robot = new Robot();
-            robot.setAutoDelay(10);
+            robot.setAutoDelay(0);  // 设置为0以最大化点击速率
         } catch (AWTException e) {
             showError("无法初始化机器人实例: " + e.getMessage());
             System.exit(1);
@@ -128,6 +130,7 @@ public class HotkeyPositionMouseClicker {
         buttonCombo.setSelectedIndex(buttonType);
 
         JCheckBox randomCheck = new JCheckBox("随机间隔", randomInterval);
+        fastModeCheck = new JCheckBox("极速模式（最大化点击速率）", fastMode);
         JTextField minField = new JTextField(String.valueOf(minInterval));
         JTextField maxField = new JTextField(String.valueOf(maxInterval));
 
@@ -138,7 +141,7 @@ public class HotkeyPositionMouseClicker {
         clickPanel.add(new JLabel("鼠标按钮:"));
         clickPanel.add(buttonCombo);
         clickPanel.add(randomCheck);
-        clickPanel.add(new JLabel());
+        clickPanel.add(fastModeCheck);
         clickPanel.add(new JLabel("最小间隔:"));
         clickPanel.add(minField);
         clickPanel.add(new JLabel("最大间隔:"));
@@ -207,6 +210,7 @@ public class HotkeyPositionMouseClicker {
                     updatePositionSettings()) {
                 buttonType = buttonCombo.getSelectedIndex();
                 randomInterval = randomCheck.isSelected();
+                fastMode = fastModeCheck.isSelected();
                 startClicking();
             }
         });
@@ -216,6 +220,9 @@ public class HotkeyPositionMouseClicker {
         saveBtn.addActionListener(e -> {
             if (updateSettings(intervalField, countField, minField, maxField) &&
                     updatePositionSettings()) {
+                buttonType = buttonCombo.getSelectedIndex();
+                randomInterval = randomCheck.isSelected();
+                fastMode = fastModeCheck.isSelected();
                 savePreferences();
                 logArea.append("✅ 设置已保存\n");
             }
@@ -378,18 +385,22 @@ public class HotkeyPositionMouseClicker {
                         // 移动到指定位置（如果不是使用当前位置）
                         if (!useCurrentPosition) {
                             robot.mouseMove(clickX, clickY);
-                            Thread.sleep(50); // 等待移动完成
+                            // 极速模式减少移动等待时间
+                            Thread.sleep(fastMode ? 10 : 50);
                         }
 
                         performClick();
 
                         executedClicks++;
+                        // 极速模式下降低日志更新频率（每10次更新一次），普通模式每次更新
                         final int currentCount = executedClicks;
-                        SwingUtilities.invokeLater(() -> {
-                            logArea.append("🖱️ 点击次数: " + currentCount +
-                                    (clickCount > 0 ? "/" + clickCount : "") + "\n");
-                            logArea.setCaretPosition(logArea.getDocument().getLength());
-                        });
+                        if (!fastMode || executedClicks % 10 == 0 || executedClicks == 1) {
+                            SwingUtilities.invokeLater(() -> {
+                                logArea.append("🖱️ 点击次数: " + currentCount +
+                                        (clickCount > 0 ? "/" + clickCount : "") + "\n");
+                                logArea.setCaretPosition(logArea.getDocument().getLength());
+                            });
+                        }
 
                         if (clicking.get()) {
                             int waitTime = randomInterval ?
@@ -435,7 +446,12 @@ public class HotkeyPositionMouseClicker {
     private void performClick() {
         try {
             robot.mousePress(getButtonMask());
-            Thread.sleep(20 + (int) (Math.random() * 30));
+            // 极速模式：最小延迟；普通模式：随机延迟模拟真人操作
+            if (fastMode) {
+                Thread.sleep(1);  // 极速模式：最小延迟
+            } else {
+                Thread.sleep(20 + (int) (Math.random() * 30));  // 普通模式：模拟真人
+            }
             robot.mouseRelease(getButtonMask());
         } catch (InterruptedException e) {
             try {
@@ -565,6 +581,7 @@ public class HotkeyPositionMouseClicker {
         clickCount = prefs.getInt("count", 0);
         buttonType = prefs.getInt("button", 0);
         randomInterval = prefs.getBoolean("random", false);
+        fastMode = prefs.getBoolean("fastMode", false);
         minInterval = prefs.getInt("minInterval", 50);
         maxInterval = prefs.getInt("maxInterval", 200);
         clickX = prefs.getInt("clickX", -1);
@@ -577,6 +594,7 @@ public class HotkeyPositionMouseClicker {
         prefs.putInt("count", clickCount);
         prefs.putInt("button", buttonType);
         prefs.putBoolean("random", randomInterval);
+        prefs.putBoolean("fastMode", fastMode);
         prefs.putInt("minInterval", minInterval);
         prefs.putInt("maxInterval", maxInterval);
         prefs.putInt("clickX", clickX);
