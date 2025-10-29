@@ -18,6 +18,11 @@ public class HotkeyPositionMouseClicker {
     private Thread clickThread;
     private Preferences prefs;
 
+    // 操作系统检测
+    private boolean isMac;
+    private boolean isWindows;
+    private String modifierKey;  // "⌘" for Mac, "Ctrl" for Windows
+
     // 配置参数
     private int clickInterval = 100;
     private int clickCount = 0;
@@ -38,6 +43,12 @@ public class HotkeyPositionMouseClicker {
     private JTextArea logArea;
 
     public HotkeyPositionMouseClicker() {
+        // 检测操作系统
+        String osName = System.getProperty("os.name").toLowerCase();
+        isMac = osName.contains("mac");
+        isWindows = osName.contains("windows");
+        modifierKey = isMac ? "⌘" : "Ctrl";
+
         prefs = Preferences.userNodeForPackage(HotkeyPositionMouseClicker.class);
         loadPreferences();
 
@@ -49,17 +60,16 @@ public class HotkeyPositionMouseClicker {
             System.exit(1);
         }
 
-        setupMacOSFeatures();
+        setupOSFeatures();
         createGUI();
     }
 
-    private void setupMacOSFeatures() {
-        System.setProperty("apple.awt.application.name", "Mac鼠标连点器 - 快捷键版");
-        System.setProperty("apple.awt.fullscreenable", "true");
-
-        if (System.getProperty("os.name").toLowerCase().contains("mac")) {
+    private void setupOSFeatures() {
+        if (isMac) {
+            System.setProperty("apple.awt.application.name", "鼠标连点器 - 快捷键版");
+            System.setProperty("apple.awt.fullscreenable", "true");
             try {
-                System.setProperty("com.apple.mrj.application.apple.menu.about.name", "Mac鼠标连点器");
+                System.setProperty("com.apple.mrj.application.apple.menu.about.name", "鼠标连点器");
                 System.setProperty("apple.laf.useScreenMenuBar", "true");
             } catch (Exception e) {
                 System.out.println("macOS 特性设置失败: " + e.getMessage());
@@ -68,7 +78,8 @@ public class HotkeyPositionMouseClicker {
     }
 
     private void createGUI() {
-        JFrame frame = new JFrame("Mac鼠标连点器 - 快捷键版");
+        String title = isMac ? "鼠标连点器 - 快捷键版" : "鼠标连点器 - Windows版";
+        JFrame frame = new JFrame(title);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setLayout(new BorderLayout(10, 10));
 
@@ -93,8 +104,8 @@ public class HotkeyPositionMouseClicker {
         xField.setEnabled(!useCurrentPosition);
         yField.setEnabled(!useCurrentPosition);
 
-        JButton getPosButton = new JButton("获取当前位置 (⌘P)");
-        JButton testPosButton = new JButton("测试位置 (⌘T)");
+        JButton getPosButton = new JButton("获取当前位置 (" + modifierKey + "P)");
+        JButton testPosButton = new JButton("测试位置 (" + modifierKey + "T)");
 
         positionPanel.add(currentPosRadio);
         positionPanel.add(new JLabel());
@@ -137,8 +148,8 @@ public class HotkeyPositionMouseClicker {
         JPanel buttonPanel = new JPanel();
         buttonPanel.setLayout(new FlowLayout());
 
-        JButton startBtn = new JButton("开始 (⌘1)");
-        JButton stopBtn = new JButton("停止 (⌘2)");
+        JButton startBtn = new JButton("开始 (" + modifierKey + "1)");
+        JButton stopBtn = new JButton("停止 (" + modifierKey + "2)");
         JButton saveBtn = new JButton("保存设置");
 
         buttonPanel.add(startBtn);
@@ -148,7 +159,9 @@ public class HotkeyPositionMouseClicker {
         // 状态显示
         logArea = new JTextArea(10, 40);
         logArea.setEditable(false);
-        logArea.setFont(new Font("Monaco", Font.PLAIN, 12));
+        // 根据操作系统选择字体
+        String fontName = isMac ? "Monaco" : (isWindows ? "Consolas" : "Monospaced");
+        logArea.setFont(new Font(fontName, Font.PLAIN, 12));
         JScrollPane scrollPane = new JScrollPane(logArea);
         scrollPane.setBorder(BorderFactory.createTitledBorder("运行日志"));
 
@@ -157,7 +170,10 @@ public class HotkeyPositionMouseClicker {
         hotkeyPanel.setLayout(new FlowLayout());
         hotkeyPanel.setBorder(BorderFactory.createTitledBorder("快捷键说明"));
 
-        JLabel hotkeyLabel = new JLabel("⌘1:开始  ⌘2:停止  ⌘P:获取位置  ⌘T:测试位置  ⌘S:快速保存");
+        String hotkeyText = modifierKey + "1:开始  " + modifierKey + "2:停止  " + 
+                           modifierKey + "P:获取位置  " + modifierKey + "T:测试位置  " + 
+                           modifierKey + "S:快速保存";
+        JLabel hotkeyLabel = new JLabel(hotkeyText);
         hotkeyPanel.add(hotkeyLabel);
 
         // 事件处理 - 位置设置
@@ -215,7 +231,7 @@ public class HotkeyPositionMouseClicker {
         frame.add(scrollPane, BorderLayout.CENTER);
         frame.add(hotkeyPanel, BorderLayout.SOUTH);
 
-        setupMacHotkeys(frame, startBtn, stopBtn, getPosButton, testPosButton, saveBtn);
+        setupHotkeys(frame, startBtn, stopBtn, getPosButton, testPosButton, saveBtn);
         frame.pack();
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
@@ -458,14 +474,15 @@ public class HotkeyPositionMouseClicker {
     }
 
     /**
-     * 设置 macOS 快捷键
+     * 设置跨平台快捷键（自动适配Mac和Windows）
      */
-    private void setupMacHotkeys(JFrame frame, JButton startBtn, JButton stopBtn,
-                                 JButton getPosButton, JButton testPosButton, JButton saveBtn) {
+    private void setupHotkeys(JFrame frame, JButton startBtn, JButton stopBtn,
+                              JButton getPosButton, JButton testPosButton, JButton saveBtn) {
         JRootPane rootPane = frame.getRootPane();
+        // 自动获取当前系统的快捷键修饰键（Mac使用Meta，Windows使用Ctrl）
         int menuShortcutKeyMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
 
-        // ⌘1 - 开始连点
+        // Ctrl/⌘1 - 开始连点
         KeyStroke startKey = KeyStroke.getKeyStroke(KeyEvent.VK_1, menuShortcutKeyMask);
         rootPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(startKey, "start");
         rootPane.getActionMap().put("start", new AbstractAction() {
@@ -474,7 +491,7 @@ public class HotkeyPositionMouseClicker {
             }
         });
 
-        // ⌘2 - 停止连点
+        // Ctrl/⌘2 - 停止连点
         KeyStroke stopKey = KeyStroke.getKeyStroke(KeyEvent.VK_2, menuShortcutKeyMask);
         rootPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(stopKey, "stop");
         rootPane.getActionMap().put("stop", new AbstractAction() {
@@ -483,7 +500,7 @@ public class HotkeyPositionMouseClicker {
             }
         });
 
-        // ⌘P - 获取当前位置
+        // Ctrl/⌘P - 获取当前位置
         KeyStroke getPosKey = KeyStroke.getKeyStroke(KeyEvent.VK_P, menuShortcutKeyMask);
         rootPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(getPosKey, "getPosition");
         rootPane.getActionMap().put("getPosition", new AbstractAction() {
@@ -492,7 +509,7 @@ public class HotkeyPositionMouseClicker {
             }
         });
 
-        // ⌘T - 测试位置
+        // Ctrl/⌘T - 测试位置
         KeyStroke testPosKey = KeyStroke.getKeyStroke(KeyEvent.VK_T, menuShortcutKeyMask);
         rootPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(testPosKey, "testPosition");
         rootPane.getActionMap().put("testPosition", new AbstractAction() {
@@ -501,7 +518,7 @@ public class HotkeyPositionMouseClicker {
             }
         });
 
-        // ⌘S - 快速保存设置
+        // Ctrl/⌘S - 快速保存设置
         KeyStroke saveKey = KeyStroke.getKeyStroke(KeyEvent.VK_S, menuShortcutKeyMask);
         rootPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(saveKey, "saveSettings");
         rootPane.getActionMap().put("saveSettings", new AbstractAction() {
@@ -510,7 +527,7 @@ public class HotkeyPositionMouseClicker {
             }
         });
 
-        // F12 - 快速获取位置（备用快捷键）
+        // F12 - 快速获取位置（备用快捷键，跨平台通用）
         KeyStroke f12Key = KeyStroke.getKeyStroke(KeyEvent.VK_F12, 0);
         rootPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(f12Key, "quickGetPosition");
         rootPane.getActionMap().put("quickGetPosition", new AbstractAction() {
@@ -573,8 +590,12 @@ public class HotkeyPositionMouseClicker {
 
     public static void main(String[] args) {
         try {
-            System.setProperty("apple.laf.useScreenMenuBar", "true");
-            System.setProperty("com.apple.mrj.application.apple.menu.about.name", "Mac鼠标连点器");
+            // 只在Mac上设置macOS特定的系统属性
+            String osName = System.getProperty("os.name").toLowerCase();
+            if (osName.contains("mac")) {
+                System.setProperty("apple.laf.useScreenMenuBar", "true");
+                System.setProperty("com.apple.mrj.application.apple.menu.about.name", "鼠标连点器");
+            }
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception e) {
             try {

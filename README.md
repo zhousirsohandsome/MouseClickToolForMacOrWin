@@ -1,6 +1,6 @@
-# Mac 鼠标连点器 - 快捷键版(点击star后续陆续更新windows版本以及自定义多重点击效果)
+# 鼠标连点器 - 跨平台快捷键版
 
-一个功能强大的 macOS 鼠标连点工具，支持快捷键操作和位置记忆功能。
+一个功能强大的跨平台鼠标连点工具，支持 macOS 和 Windows 系统，支持快捷键操作和位置记忆功能。
 
 ## ✨ 功能特性
 
@@ -10,13 +10,19 @@
   - 一键获取鼠标当前位置
   - 位置测试功能
 
-- ⌨️ **快捷键支持**
-  - `⌘1` - 开始连点
-  - `⌘2` - 停止连点
-  - `⌘P` - 获取当前位置
-  - `⌘T` - 测试点击位置
-  - `⌘S` - 快速保存设置
-  - `F12` - 备用快速获取位置
+- 🖥️ **跨平台支持**
+  - ✅ macOS 系统（自动适配 ⌘ 键）
+  - ✅ Windows 系统（自动适配 Ctrl 键）
+  - 自动检测操作系统并适配界面和快捷键
+  - 原生系统外观和体验
+
+- ⌨️ **快捷键支持（自动适配系统）**
+  - macOS: `⌘1` / Windows: `Ctrl+1` - 开始连点
+  - macOS: `⌘2` / Windows: `Ctrl+2` - 停止连点
+  - macOS: `⌘P` / Windows: `Ctrl+P` - 获取当前位置
+  - macOS: `⌘T` / Windows: `Ctrl+T` - 测试点击位置
+  - macOS: `⌘S` / Windows: `Ctrl+S` - 快速保存设置
+  - `F12` - 备用快速获取位置（跨平台通用）
 
 - 🖱️ **灵活的点击配置**
   - 可设置点击间隔（毫秒）
@@ -28,17 +34,12 @@
   - 自动保存用户设置
   - 下次启动自动恢复配置
 
-- 📱 **原生 macOS 体验**
-  - 适配 macOS 系统样式
-  - 支持系统菜单栏
-  - 流畅的用户界面
-
 ## 🚀 快速开始
 
 ### 环境要求
 
 - Java 8 或更高版本
-- macOS 系统
+- macOS 或 Windows 系统
 - Maven 3.x（可选，用于构建）
 
 ### 编译运行
@@ -46,19 +47,23 @@
 ```bash
 # 克隆项目
 git clone <your-repo-url>
-cd open-source-project
+cd MouseClickToolForMacOrWin
 
-# 编译项目
-mvn clean compile
-
-# 运行程序
-mvn exec:java -Dexec.mainClass="HotkeyPositionMouseClicker"
+# 直接使用 Java 编译运行（推荐）
+javac HotkeyPositionMouseClicker.java
+java HotkeyPositionMouseClicker
 ```
 
-或者直接使用 Java 运行：
-
+**Windows 用户：**
 ```bash
-cd src/main/java
+# 使用 cmd 或 PowerShell
+javac HotkeyPositionMouseClicker.java
+java HotkeyPositionMouseClicker
+```
+
+**macOS 用户：**
+```bash
+# 使用 Terminal
 javac HotkeyPositionMouseClicker.java
 java HotkeyPositionMouseClicker
 ```
@@ -70,28 +75,30 @@ java HotkeyPositionMouseClicker
 1. **启动程序**：运行 `HotkeyPositionMouseClicker` 类
 2. **选择点击位置**：
    - 选择"当前鼠标位置"：将在鼠标当前位置点击
-   - 选择"自定义位置"：输入 X、Y 坐标或使用 `⌘P` 获取当前位置
+   - 选择"自定义位置"：输入 X、Y 坐标或使用快捷键获取当前位置（macOS: `⌘P`, Windows: `Ctrl+P`）
 3. **配置点击参数**：
    - 设置点击间隔（毫秒）
    - 设置点击次数（0 表示无限）
    - 选择鼠标按钮类型
    - 可选：开启随机间隔模式
 4. **开始连点**：
-   - 点击"开始"按钮或按 `⌘1`
+   - 点击"开始"按钮或使用快捷键（macOS: `⌘1`, Windows: `Ctrl+1`）
    - 程序将在 3 秒倒计时后开始连点
 5. **停止连点**：
-   - 点击"停止"按钮或按 `⌘2`
+   - 点击"停止"按钮或使用快捷键（macOS: `⌘2`, Windows: `Ctrl+2`）
 
 ### 快捷键说明
 
-| 快捷键 | 功能 |
-|--------|------|
-| `⌘1` | 开始连点 |
-| `⌘2` | 停止连点 |
-| `⌘P` | 获取当前鼠标位置 |
-| `⌘T` | 测试设置的位置 |
-| `⌘S` | 快速保存设置 |
-| `F12` | 快速获取位置（备用） |
+程序会自动根据操作系统适配快捷键：
+
+| 功能 | macOS 快捷键 | Windows 快捷键 |
+|------|-------------|---------------|
+| 开始连点 | `⌘1` | `Ctrl+1` |
+| 停止连点 | `⌘2` | `Ctrl+2` |
+| 获取当前鼠标位置 | `⌘P` | `Ctrl+P` |
+| 测试设置的位置 | `⌘T` | `Ctrl+T` |
+| 快速保存设置 | `⌘S` | `Ctrl+S` |
+| 快速获取位置（备用） | `F12` | `F12` |
 
 ### 高级功能
 
@@ -108,10 +115,13 @@ java HotkeyPositionMouseClicker
 
 ## 📝 注意事项
 
-1. **系统权限**：macOS 可能需要授予应用程序"辅助功能"权限才能正常控制鼠标
+1. **系统权限**：
+   - **macOS**：需要授予应用程序"辅助功能"权限（系统偏好设置 → 安全性与隐私 → 辅助功能）
+   - **Windows**：可能需要以管理员权限运行（某些情况下控制鼠标需要管理员权限）
 2. **坐标范围**：自定义坐标必须在屏幕范围内，程序会自动验证
 3. **点击间隔**：建议设置合理的点击间隔，过快的点击可能影响系统稳定性
 4. **固定位置模式**：使用固定位置点击时，程序会在结束后恢复鼠标到原始位置
+5. **自动适配**：程序会自动检测操作系统，界面文字和快捷键会自动适配当前系统
 
 ## 🤝 贡献
 
@@ -133,4 +143,4 @@ java HotkeyPositionMouseClicker
 
 ![Java](https://img.shields.io/badge/Java-8+-orange)
 ![License](https://img.shields.io/badge/license-MIT-blue)
-![Platform](https://img.shields.io/badge/platform-macOS-lightgrey)
+![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey)
