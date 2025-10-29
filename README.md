@@ -1,4 +1,4 @@
-# Mac 鼠标连点器 - 快捷键版
+# Mac 鼠标连点器 - 快捷键版(点击star后续陆续更新windows版本以及自定义多重点击效果)
 
 一个功能强大的 macOS 鼠标连点工具，支持快捷键操作和位置记忆功能。
 
@@ -131,3 +131,6 @@ java HotkeyPositionMouseClicker
 
 感谢所有使用和贡献本项目的开发者！
 
+![Java](https://img.shields.io/badge/Java-8+-orange)
+![License](https://img.shields.io/badge/license-MIT-blue)
+![Platform](https://img.shields.io/badge/platform-macOS-lightgrey)
