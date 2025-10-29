@@ -347,6 +347,21 @@ public class HotkeyPositionMouseClicker {
     }
 
     /**
+     * GUI组件引用（用于事件处理）
+     */
+    private JTextField intervalField;
+    private JTextField countField;
+    private JComboBox<String> buttonCombo;
+    private JCheckBox randomCheck;
+    private JTextField minField;
+    private JTextField maxField;
+    private JButton startBtn;
+    private JButton stopBtn;
+    private JButton saveBtn;
+    private JButton getPosButton;
+    private JButton testPosButton;
+
+    /**
      * 创建GUI界面
      */
     private void createGUI() {
@@ -363,14 +378,7 @@ public class HotkeyPositionMouseClicker {
         frame.add(scrollPane, BorderLayout.CENTER);
         frame.add(hotkeyPanel, BorderLayout.SOUTH);
 
-        JButton startBtn = (JButton) ((JPanel) mainPanel.getComponent(mainPanel.getComponentCount() - 1))
-                .getComponent(0);
-        JButton stopBtn = (JButton) ((JPanel) mainPanel.getComponent(mainPanel.getComponentCount() - 1))
-                .getComponent(1);
-        JButton saveBtn = (JButton) ((JPanel) mainPanel.getComponent(mainPanel.getComponentCount() - 1))
-                .getComponent(2);
-
-        setupHotkeys(frame, startBtn, stopBtn, null, null, saveBtn);
+        setupHotkeys(frame, startBtn, stopBtn, getPosButton, testPosButton, saveBtn);
         frame.pack();
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
@@ -419,8 +427,8 @@ public class HotkeyPositionMouseClicker {
         xField.setEnabled(!useCurrentPosition);
         yField.setEnabled(!useCurrentPosition);
 
-        JButton getPosButton = new JButton("获取当前位置 (" + modifierKey + "P)");
-        JButton testPosButton = new JButton("测试位置 (" + modifierKey + "T)");
+        getPosButton = new JButton("获取当前位置 (" + modifierKey + "P)");
+        testPosButton = new JButton("测试位置 (" + modifierKey + "T)");
 
         positionPanel.add(currentPosRadio);
         positionPanel.add(new JLabel());
@@ -466,16 +474,16 @@ public class HotkeyPositionMouseClicker {
         JPanel clickPanel = new JPanel(new GridLayout(0, 2, COMPONENT_SPACING, COMPONENT_SPACING));
         clickPanel.setBorder(BorderFactory.createTitledBorder("点击设置"));
 
-        JTextField intervalField = new JTextField(String.valueOf(clickInterval));
-        JTextField countField = new JTextField(String.valueOf(clickCount));
+        intervalField = new JTextField(String.valueOf(clickInterval));
+        countField = new JTextField(String.valueOf(clickCount));
         String[] buttonNames = {"左键", "右键", "中键"};
-        JComboBox<String> buttonCombo = new JComboBox<>(buttonNames);
+        buttonCombo = new JComboBox<>(buttonNames);
         buttonCombo.setSelectedIndex(buttonType);
 
-        JCheckBox randomCheck = new JCheckBox("随机间隔", randomInterval);
+        randomCheck = new JCheckBox("随机间隔", randomInterval);
         fastModeCheck = new JCheckBox("极速模式（最大化点击速率）", fastMode);
-        JTextField minField = new JTextField(String.valueOf(minInterval));
-        JTextField maxField = new JTextField(String.valueOf(maxInterval));
+        minField = new JTextField(String.valueOf(minInterval));
+        maxField = new JTextField(String.valueOf(maxInterval));
 
         clickPanel.add(new JLabel("点击间隔(ms):"));
         clickPanel.add(intervalField);
@@ -490,10 +498,6 @@ public class HotkeyPositionMouseClicker {
         clickPanel.add(new JLabel("最大间隔:"));
         clickPanel.add(maxField);
 
-        // 存储引用以便事件处理使用
-        Object[] references = {intervalField, countField, buttonCombo, randomCheck,
-                minField, maxField, startBtn -> {}, stopBtn -> {}, saveBtn -> {}};
-
         return clickPanel;
     }
 
@@ -504,15 +508,33 @@ public class HotkeyPositionMouseClicker {
         JPanel buttonPanel = new JPanel();
         buttonPanel.setLayout(new FlowLayout());
 
-        JButton startBtn = new JButton("开始 (" + modifierKey + "1)");
-        JButton stopBtn = new JButton("停止 (" + modifierKey + "2)");
-        JButton saveBtn = new JButton("保存设置");
+        startBtn = new JButton("开始 (" + modifierKey + "1)");
+        stopBtn = new JButton("停止 (" + modifierKey + "2)");
+        saveBtn = new JButton("保存设置");
 
-        // 获取引用
-        JTextField intervalField = (JTextField) ((JPanel) buttonPanel.getParent().getComponent(2))
-                .getComponent(1);
-        // 这里需要重新设计以访问其他组件...
-        // 暂时简化，直接在createMainPanel中处理
+        // 事件处理
+        startBtn.addActionListener(e -> {
+            if (updateSettings(intervalField, countField, minField, maxField)
+                    && updatePositionSettings()) {
+                buttonType = buttonCombo.getSelectedIndex();
+                randomInterval = randomCheck.isSelected();
+                fastMode = fastModeCheck.isSelected();
+                startClicking();
+            }
+        });
+
+        stopBtn.addActionListener(e -> stopClicking());
+
+        saveBtn.addActionListener(e -> {
+            if (updateSettings(intervalField, countField, minField, maxField)
+                    && updatePositionSettings()) {
+                buttonType = buttonCombo.getSelectedIndex();
+                randomInterval = randomCheck.isSelected();
+                fastMode = fastModeCheck.isSelected();
+                savePreferences();
+                appendLog("✅ 设置已保存");
+            }
+        });
 
         buttonPanel.add(startBtn);
         buttonPanel.add(stopBtn);
