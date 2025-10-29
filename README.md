@@ -56,6 +56,53 @@
 - macOS 或 Windows 系统
 - Maven 3.x（可选，用于构建）
 
+### 环境配置
+
+#### 1. 检查 Java 是否已安装
+
+打开终端（macOS/Linux）或命令提示符（Windows），输入以下命令：
+
+```bash
+java -version
+```
+
+如果显示 Java 版本信息（如 `java version "1.8.0_xxx"`），说明已安装，可直接使用。
+
+#### 2. 如果未安装 Java
+
+**Windows 用户：**
+1. 访问 [Oracle JDK 下载页面](https://www.oracle.com/java/technologies/downloads/) 或 [OpenJDK 下载页面](https://adoptium.net/)
+2. 下载对应系统的 Java 8 或更高版本安装包
+3. 运行安装程序，按提示完成安装
+4. 重新打开命令提示符，验证安装：`java -version`
+
+**macOS 用户：**
+```bash
+# 使用 Homebrew 安装（推荐）
+brew install openjdk@8
+
+# 或访问官网下载
+# https://www.oracle.com/java/technologies/downloads/
+```
+
+
+
+#### 3. 验证安装
+
+安装完成后，重新打开终端/命令提示符，运行：
+```bash
+java -version
+javac -version
+```
+
+两个命令都应该显示版本信息，说明安装成功。
+
+#### 4. 配置 PATH（如需要）
+
+如果 `java` 或 `javac` 命令提示找不到，可能需要配置环境变量。详细教程：
+- [Windows 配置教程](https://www.java.com/zh-CN/download/help/path.html)
+- [macOS/Linux 配置教程](https://docs.oracle.com/javase/8/docs/technotes/guides/install/linux_jdk.html#BJFGGEFG)
+
 ### 编译运行
 
 #### V1.0 版本（单位置版本）
