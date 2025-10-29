@@ -57,24 +57,65 @@
 git clone <your-repo-url>
 cd MouseClickToolForMacOrWin
 
-# 直接使用 Java 编译运行（推荐）
-javac HotkeyPositionMouseClicker.java
-java HotkeyPositionMouseClicker
+# 编译项目（标准Java项目结构）
+# 如果编译器和运行时Java版本不一致，建议指定target版本：
+javac -target 8 src/main/java/HotkeyPositionMouseClicker.java -d out
+
+# 或使用默认编译（自动兼容）
+javac src/main/java/HotkeyPositionMouseClicker.java -d out
+
+# 运行程序
+java -cp out HotkeyPositionMouseClicker
 ```
 
 **Windows 用户：**
 ```bash
 # 使用 cmd 或 PowerShell
-javac HotkeyPositionMouseClicker.java
-java HotkeyPositionMouseClicker
+javac -target 8 src/main/java/HotkeyPositionMouseClicker.java -d out
+java -cp out HotkeyPositionMouseClicker
 ```
 
-**macOS 用户：**
+**macOS/Linux 用户：**
 ```bash
 # 使用 Terminal
-javac HotkeyPositionMouseClicker.java
-java HotkeyPositionMouseClicker
+javac -target 8 src/main/java/HotkeyPositionMouseClicker.java -d out
+java -cp out HotkeyPositionMouseClicker
 ```
+
+**一键编译并运行（推荐）：**
+```bash
+# Windows (PowerShell)
+javac -target 8 src/main/java/HotkeyPositionMouseClicker.java -d out; java -cp out HotkeyPositionMouseClicker
+
+# macOS/Linux
+javac -target 8 src/main/java/HotkeyPositionMouseClicker.java -d out && java -cp out HotkeyPositionMouseClicker
+```
+
+**注意：**
+- 如果遇到版本不匹配错误（`UnsupportedClassVersionError`），使用 `-target 8` 参数编译以确保与 Java 8+ 兼容
+- 程序启动后会显示图形界面窗口
+
+## 📁 项目结构
+
+```
+MouseClickToolForMacOrWin/
+├── src/
+│   └── main/
+│       └── java/
+│           └── HotkeyPositionMouseClicker.java    # Java 源代码
+├── out/                                             # 编译输出目录（自动生成，已忽略）
+├── LICENSE                                          # MIT 许可证文件
+├── README.md                                        # 项目说明文档
+└── .gitignore                                      # Git 忽略文件配置
+```
+
+### 目录说明
+
+- **`src/main/java/`** - Java 源代码目录（符合标准 Java 项目结构）
+- **`out/`** - 编译输出目录，存放编译后的 `.class` 文件
+- **`LICENSE`** - 项目许可证文件（MIT）
+- **`README.md`** - 项目使用说明文档
+- **`.gitignore`** - Git 版本控制忽略规则配置
 
 ## 📖 使用说明
 

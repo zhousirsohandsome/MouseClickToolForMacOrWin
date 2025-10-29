@@ -27,6 +27,9 @@ Thumbs.db
 # Compiled class files
 *.class
 
+# Build output
+out/
+
 # Log files
 *.log
 
