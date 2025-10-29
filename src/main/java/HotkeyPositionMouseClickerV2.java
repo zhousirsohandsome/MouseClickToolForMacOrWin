@@ -1,4 +1,3 @@
-package src.main.java;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -433,6 +432,7 @@ public class HotkeyPositionMouseClickerV2 {
         JButton moveDownBtn = new JButton("下移");
         JButton clearAllBtn = new JButton("清空所有");
         JButton testPosBtn = new JButton("测试选中位置");
+        JButton testAllBtn = new JButton("测试所有位置");
 
         buttonPanel.add(addPosBtn);
         buttonPanel.add(deletePosBtn);
@@ -440,6 +440,7 @@ public class HotkeyPositionMouseClickerV2 {
         buttonPanel.add(moveDownBtn);
         buttonPanel.add(clearAllBtn);
         buttonPanel.add(testPosBtn);
+        buttonPanel.add(testAllBtn);
 
         // 事件处理
         addPosBtn.addActionListener(e -> addCurrentPosition());
@@ -448,11 +449,22 @@ public class HotkeyPositionMouseClickerV2 {
         moveDownBtn.addActionListener(e -> movePositionDown());
         clearAllBtn.addActionListener(e -> clearAllPositions());
         testPosBtn.addActionListener(e -> testSelectedPosition());
+        testAllBtn.addActionListener(e -> testAllPositions());
 
         // 表格编辑事件
         positionTable.getModel().addTableModelListener(e -> {
-            if (e.getType() == javax.swing.event.TableModelEvent.UPDATE) {
-                updatePositionFromTable(e.getFirstRow());
+            if (e.getType() == javax.swing.event.TableModelEvent.UPDATE && e.getFirstRow() >= 0) {
+                SwingUtilities.invokeLater(() -> updatePositionFromTable(e.getFirstRow()));
+            }
+        });
+
+        // 键盘快捷键：Delete键删除选中行
+        positionTable.getInputMap(JComponent.WHEN_FOCUSED).put(
+                KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0), "deleteRow");
+        positionTable.getActionMap().put("deleteRow", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                deleteSelectedPosition();
             }
         });
 
@@ -588,15 +600,44 @@ public class HotkeyPositionMouseClickerV2 {
             Thread.sleep(GET_POSITION_DELAY);
             Point mousePos = MouseInfo.getPointerInfo().getLocation();
             ClickPosition pos = new ClickPosition(mousePos.x, mousePos.y, "");
+
+            // 检查是否重复
+            if (isDuplicatePosition(pos)) {
+                int result = JOptionPane.showConfirmDialog(null,
+                        "位置 (" + pos.x + ", " + pos.y + ") 已存在，是否仍要添加？",
+                        "重复位置确认", JOptionPane.YES_NO_OPTION);
+                if (result != JOptionPane.YES_OPTION) {
+                    appendLog("⏭️ 已跳过重复位置");
+                    return;
+                }
+            }
+
             clickPositions.add(pos);
             refreshPositionTable();
             appendLog("📌 已添加位置: " + pos);
+            // 自动保存
+            savePreferences();
+            // 自动选中新添加的行
+            positionTable.setRowSelectionInterval(clickPositions.size() - 1,
+                    clickPositions.size() - 1);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             appendLog("❌ 添加位置失败: " + e.getMessage());
         } catch (Exception ex) {
             appendLog("❌ 添加位置失败: " + ex.getMessage());
         }
+    }
+
+    /**
+     * 检查位置是否重复
+     */
+    private boolean isDuplicatePosition(ClickPosition pos) {
+        for (ClickPosition existing : clickPositions) {
+            if (existing.x == pos.x && existing.y == pos.y) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -608,6 +649,13 @@ public class HotkeyPositionMouseClickerV2 {
             ClickPosition pos = clickPositions.remove(selectedRow);
             refreshPositionTable();
             appendLog("🗑️ 已删除位置: " + pos);
+            // 自动保存
+            savePreferences();
+            // 如果有其他位置，保持选中状态
+            if (!clickPositions.isEmpty()) {
+                int newSelection = Math.min(selectedRow, clickPositions.size() - 1);
+                positionTable.setRowSelectionInterval(newSelection, newSelection);
+            }
         } else {
             showError("请先选择一个位置");
         }
@@ -649,12 +697,20 @@ public class HotkeyPositionMouseClickerV2 {
      * 清空所有位置
      */
     private void clearAllPositions() {
-        int result = JOptionPane.showConfirmDialog(null, "确定要清空所有位置吗？", "确认",
-                JOptionPane.YES_NO_OPTION);
+        if (clickPositions.isEmpty()) {
+            showError("位置列表已经为空");
+            return;
+        }
+        int result = JOptionPane.showConfirmDialog(null,
+                "确定要清空所有 " + clickPositions.size() + " 个位置吗？此操作不可恢复！", "确认",
+                JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
         if (result == JOptionPane.YES_OPTION) {
+            int count = clickPositions.size();
             clickPositions.clear();
             refreshPositionTable();
-            appendLog("🗑️ 已清空所有位置");
+            appendLog("🗑️ 已清空所有 " + count + " 个位置");
+            // 自动保存
+            savePreferences();
         }
     }
 
@@ -695,33 +751,88 @@ public class HotkeyPositionMouseClickerV2 {
     }
 
     /**
+     * 测试所有位置（按顺序）
+     */
+    private void testAllPositions() {
+        if (clickPositions.isEmpty()) {
+            showError("位置列表为空，无法测试");
+            return;
+        }
+
+        Thread testThread = new Thread(() -> {
+            try {
+                appendLog("🎯 开始测试所有 " + clickPositions.size() + " 个位置");
+                Point originalPos = MouseInfo.getPointerInfo().getLocation();
+
+                for (int i = 0; i < clickPositions.size(); i++) {
+                    ClickPosition pos = clickPositions.get(i);
+                    appendLog("📍 测试位置 " + (i + 1) + "/" + clickPositions.size() + ": " + pos);
+                    robot.mouseMove(pos.x, pos.y);
+                    Thread.sleep(300);
+                    performClick();
+                    Thread.sleep(200);
+                }
+
+                robot.mouseMove(originalPos.x, originalPos.y);
+                appendLog("✅ 所有位置测试完成");
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                appendLog("❌ 位置测试被中断");
+            } catch (Exception e) {
+                appendLog("❌ 位置测试失败: " + e.getMessage());
+            }
+        }, "TestAllPositionsThread");
+        testThread.start();
+    }
+
+    /**
      * 更新表格中的位置数据
      */
     private void updatePositionFromTable(int row) {
-        if (row >= 0 && row < clickPositions.size()) {
-            try {
-                String xText = tableModel.getValueAt(row, 1).toString().trim();
-                String yText = tableModel.getValueAt(row, 2).toString().trim();
-                String note = tableModel.getValueAt(row, 3).toString().trim();
+        if (row < 0 || row >= clickPositions.size()) {
+            return;
+        }
 
-                int x = Integer.parseInt(xText);
-                int y = Integer.parseInt(yText);
+        try {
+            Object xObj = tableModel.getValueAt(row, 1);
+            Object yObj = tableModel.getValueAt(row, 2);
+            Object noteObj = tableModel.getValueAt(row, 3);
 
-                Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-                if (x < 0 || x > screenSize.width || y < 0 || y > screenSize.height) {
-                    showError("坐标超出屏幕范围！屏幕尺寸: " + screenSize.width + "x" + screenSize.height);
-                    refreshPositionTable();
-                    return;
-                }
-
-                clickPositions.get(row).x = x;
-                clickPositions.get(row).y = y;
-                clickPositions.get(row).note = note;
-                appendLog("✏️ 已更新位置 " + (row + 1) + ": " + clickPositions.get(row));
-            } catch (NumberFormatException e) {
-                showError("请输入有效的坐标数字");
+            if (xObj == null || yObj == null) {
                 refreshPositionTable();
+                return;
             }
+
+            String xText = xObj.toString().trim();
+            String yText = yObj.toString().trim();
+            String note = noteObj != null ? noteObj.toString().trim() : "";
+
+            if (xText.isEmpty() || yText.isEmpty()) {
+                showError("X坐标和Y坐标不能为空");
+                refreshPositionTable();
+                return;
+            }
+
+            int x = Integer.parseInt(xText);
+            int y = Integer.parseInt(yText);
+
+            Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+            if (x < 0 || x > screenSize.width || y < 0 || y > screenSize.height) {
+                showError("坐标 (" + x + ", " + y + ") 超出屏幕范围！\n屏幕尺寸: "
+                        + screenSize.width + " x " + screenSize.height);
+                refreshPositionTable();
+                return;
+            }
+
+            clickPositions.get(row).x = x;
+            clickPositions.get(row).y = y;
+            clickPositions.get(row).note = note;
+            appendLog("✏️ 已更新位置 " + (row + 1) + ": " + clickPositions.get(row));
+            // 自动保存位置列表
+            savePreferences();
+        } catch (NumberFormatException e) {
+            showError("请输入有效的坐标数字（必须是整数）");
+            refreshPositionTable();
         }
     }
 
@@ -741,19 +852,42 @@ public class HotkeyPositionMouseClickerV2 {
      */
     private boolean validatePositions() {
         if (clickPositions.isEmpty()) {
-            showError("请至少添加一个点击位置！");
+            showError("请至少添加一个点击位置！\n提示：将鼠标移动到目标位置，然后按 " + modifierKey + "P 或点击\"添加位置\"按钮");
             return false;
         }
 
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        for (ClickPosition pos : clickPositions) {
+        for (int i = 0; i < clickPositions.size(); i++) {
+            ClickPosition pos = clickPositions.get(i);
             if (pos.x < 0 || pos.x > screenSize.width || pos.y < 0 || pos.y > screenSize.height) {
-                showError("位置 (" + pos.x + ", " + pos.y + ") 超出屏幕范围！屏幕尺寸: "
-                        + screenSize.width + "x" + screenSize.height);
+                showError("位置 " + (i + 1) + " (" + pos.x + ", " + pos.y + ") 超出屏幕范围！\n"
+                        + "屏幕尺寸: " + screenSize.width + " x " + screenSize.height + "\n"
+                        + "请在表格中编辑该位置的坐标");
+                // 自动选中问题位置
+                positionTable.setRowSelectionInterval(i, i);
                 return false;
             }
         }
+
+        // 检查重复位置并提示
+        checkDuplicatePositions();
         return true;
+    }
+
+    /**
+     * 检查并提示重复位置
+     */
+    private void checkDuplicatePositions() {
+        for (int i = 0; i < clickPositions.size(); i++) {
+            for (int j = i + 1; j < clickPositions.size(); j++) {
+                ClickPosition pos1 = clickPositions.get(i);
+                ClickPosition pos2 = clickPositions.get(j);
+                if (pos1.x == pos2.x && pos1.y == pos2.y) {
+                    appendLog("⚠️ 检测到重复位置: 位置" + (i + 1) + " 和 位置" + (j + 1)
+                            + " 坐标相同 (" + pos1.x + ", " + pos1.y + ")");
+                }
+            }
+        }
     }
 
     /**
