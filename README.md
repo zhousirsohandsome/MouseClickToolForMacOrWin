@@ -130,6 +130,7 @@ java HotkeyPositionMouseClicker
 ## 🙏 致谢
 
 感谢所有使用和贡献本项目的开发者！
+
 ![Java](https://img.shields.io/badge/Java-8+-orange)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Platform](https://img.shields.io/badge/platform-macOS-lightgrey)
